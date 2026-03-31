@@ -1,0 +1,36 @@
+import "./App.css";
+import { useState } from "react";
+import AuthPage from "./components/AuthPage";
+import CodeEditor from "./components/CodeEditor";
+import GetStartedPage from "./components/GetStartedPage";
+
+function App() {
+  const [user, setUser] = useState(() => {
+    try {
+      return window.localStorage.getItem("securecc_session") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [showAuth, setShowAuth] = useState(Boolean(user));
+
+  return (
+    <div className="App">
+      {user ? (
+        <CodeEditor
+          user={user}
+          onLogout={() => {
+            setUser("");
+            setShowAuth(false);
+          }}
+        />
+      ) : showAuth ? (
+        <AuthPage onAuthSuccess={setUser} />
+      ) : (
+        <GetStartedPage onContinue={() => setShowAuth(true)} />
+      )}
+    </div>
+  );
+}
+
+export default App;
