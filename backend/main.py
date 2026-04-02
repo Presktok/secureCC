@@ -49,8 +49,7 @@ def resolve_gcc() -> str | None:
 
 app = FastAPI(title="SecureCC API")
 
-# Browsers reject allow_origins=["*"] together with allow_credentials=True (spec violation),
-# which surfaces as "Failed to fetch" from http://localhost:3000.
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -59,12 +58,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Handle preflight OPTIONS explicitly
+
 @app.options("/{full_path:path}")
 async def preflight_handler(full_path: str):
     return Response(status_code=200)
 
-# Serve static files if built
 BUILD_DIR = PROJECT_ROOT / "frontend/build"
 if (BUILD_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(BUILD_DIR / "static")), name="static")
@@ -89,7 +87,7 @@ def compile_code(payload: AnalyzeRequest):
     code = payload.code
     findings = analyze(code)
 
-    # ✅ Block only if HIGH severity (optional improvement)
+
     high_risk = any(f["severity"] == "HIGH" for f in findings)
 
     if high_risk:

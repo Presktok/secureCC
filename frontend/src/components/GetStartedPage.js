@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
   id: i,
@@ -7,7 +8,7 @@ const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
   duration: `${7 + (i % 6)}s`,
 }));
 
-export default function GetStartedPage({ onContinue }) {
+export default function GetStartedPage({ onContinue, theme, onThemeChange }) {
   const [scanValue, setScanValue] = useState(1);
   const [scrollY, setScrollY] = useState(0);
 
@@ -38,7 +39,7 @@ export default function GetStartedPage({ onContinue }) {
     <div className="dora-page">
       <header className="dora-nav-wrap">
         <div className="dora-brand">SecureCC</div>
-
+        <ThemeSwitcher currentTheme={theme} onThemeChange={onThemeChange} />
         <button type="button" className="dora-cta-top" onClick={onContinue}>
           Get Started
         </button>
@@ -108,7 +109,7 @@ export default function GetStartedPage({ onContinue }) {
               <div className="dora-progress">
                 <div style={{ width: `${(scanValue / 50) * 100}%` }} />
               </div>
-              <pre>{`int size = n * sizeof(int);\nmalloc(size);\n// potential overflow`}</pre>
+              <pre>{`int size = n * sizeof(int);\nmalloc(size);`}</pre>
             </div>
           </div>
         </div>

@@ -13,9 +13,24 @@ function App() {
     }
   });
   const [showAuth, setShowAuth] = useState(Boolean(user));
+  const [theme, setTheme] = useState(() => {
+    try {
+      return window.localStorage.getItem("securecc_theme") || "midnight";
+    } catch {
+      return "midnight";
+    }
+  });
+
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme);
+    try {
+      window.localStorage.setItem("securecc_theme", newTheme);
+    } catch {
+    }
+  };
 
   return (
-    <div className="App">
+    <div className={`App theme-${theme}`}>
       {user ? (
         <CodeEditor
           user={user}
@@ -23,11 +38,13 @@ function App() {
             setUser("");
             setShowAuth(false);
           }}
+          currentTheme={theme}
+          onThemeChange={handleThemeChange}
         />
       ) : showAuth ? (
-        <AuthPage onAuthSuccess={setUser} />
+        <AuthPage onAuthSuccess={setUser} theme={theme} onThemeChange={handleThemeChange} />
       ) : (
-        <GetStartedPage onContinue={() => setShowAuth(true)} />
+        <GetStartedPage onContinue={() => setShowAuth(true)} theme={theme} onThemeChange={handleThemeChange} />
       )}
     </div>
   );

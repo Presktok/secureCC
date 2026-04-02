@@ -1,5 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 const DEFAULT_MAIN_C = `#include <stdio.h>
 
@@ -8,11 +9,7 @@ int main() {
 }
 `;
 
-/**
- * Always call FastAPI by full URL from the browser. Relative "/compile" hits the CRA
- * dev server and returns "Cannot POST /compile" when the proxy does not run.
- * FastAPI CORS allows * (with credentials off). Override with REACT_APP_API_URL.
- */
+
 function apiBaseUrl() {
   const fromEnv = process.env.REACT_APP_API_URL;
   if (fromEnv) return fromEnv.replace(/\/$/, "");
@@ -34,7 +31,7 @@ function apiBaseUrl() {
   return `http://${hostname}:8000`;
 }
 
-export default function CodeEditor({ user, onLogout }) {
+export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange }) {
   const [files, setFiles] = useState({
     "main.c": DEFAULT_MAIN_C,
   });
@@ -103,11 +100,10 @@ export default function CodeEditor({ user, onLogout }) {
       try {
         window.localStorage.setItem("securecc_files", JSON.stringify(updated));
       } catch {
-        // ignore storage errors
       }
       return updated;
     });
-    // lightweight feedback without alert spam
+
     setCompileOutput("File saved locally.");
     setActiveTab("output");
   };
@@ -190,7 +186,7 @@ export default function CodeEditor({ user, onLogout }) {
 
     const onMove = (e) => {
       if (!dragRef.current.dragging) return;
-      const dy = dragRef.current.startY - e.clientY; // drag up => increase height
+      const dy = dragRef.current.startY - e.clientY;
       const max = Math.max(180, Math.floor(window.innerHeight * 0.55));
       const next = Math.max(120, Math.min(max, dragRef.current.startHeight + dy));
       setOutputHeight(next);
@@ -222,6 +218,7 @@ export default function CodeEditor({ user, onLogout }) {
           </div>
         </div>
         <div className="top-meta">
+          <ThemeSwitcher currentTheme={currentTheme} onThemeChange={onThemeChange} />
           <div className="pill">
             User: <strong>{displayName}</strong>
           </div>
@@ -238,7 +235,6 @@ export default function CodeEditor({ user, onLogout }) {
               try {
                 window.localStorage.removeItem("securecc_session");
               } catch {
-                // ignore storage errors
               }
               onLogout?.();
             }}
@@ -258,7 +254,7 @@ export default function CodeEditor({ user, onLogout }) {
                   await document.exitFullscreen();
                 }
               } catch {
-                // If browser blocks fullscreen, user can still use F11.
+
               }
             }}
             title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
@@ -296,7 +292,7 @@ export default function CodeEditor({ user, onLogout }) {
             <Editor
               height="100%"
               defaultLanguage="c"
-              theme="vs-dark"
+              theme={currentTheme === "snow" ? "light" : "vs-dark"}
               value={code}
               onChange={(value) => setCode(value ?? "")}
               onMount={(editor, monaco) => {

@@ -1,15 +1,4 @@
-"""
-SecureCC — Phase 3: Semantic Analysis (Vulnerability Detector)
 
-Orchestrates the full compiler pipeline:
-  Phase 1  Lexical Analysis   →  token stream
-  Phase 2  Syntax Analysis    →  Abstract Syntax Tree
-  Phase 3  Semantic Analysis  →  vulnerability report
-
-The semantic analyser walks the AST to detect security vulnerabilities
-with context-aware analysis, then applies regex-based pattern rules as
-a secondary sweep for patterns difficult to express in the AST alone.
-"""
 
 from __future__ import annotations
 
@@ -34,12 +23,10 @@ from .parser import (
 from .rules import VULNERABILITY_RULES
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  Unsafe-function lookup table for AST-based detection
-# ═══════════════════════════════════════════════════════════════════════
+
 
 UNSAFE_FUNCTIONS: dict[str, dict] = {
-    # ── Buffer Overflow ───────────────────────────────────────────────
+
     "gets":     {"type": "buffer_overflow",    "severity": "HIGH",   "fix": "Use fgets() with a size limit."},
     "strcpy":   {"type": "buffer_overflow",    "severity": "HIGH",   "fix": "Use strncpy() or strlcpy()."},
     "strcat":   {"type": "buffer_overflow",    "severity": "HIGH",   "fix": "Use strncat() or strlcat()."},
@@ -51,7 +38,7 @@ UNSAFE_FUNCTIONS: dict[str, dict] = {
     "wcscat":   {"type": "buffer_overflow",    "severity": "HIGH",   "fix": "Use wcsncat()."},
     "stpcpy":   {"type": "buffer_overflow",    "severity": "HIGH",   "fix": "Use stpncpy()."},
     "realpath": {"type": "buffer_overflow",    "severity": "MEDIUM", "fix": "Ensure resolved buffer is PATH_MAX."},
-    # ── Command Injection ─────────────────────────────────────────────
+
     "system":   {"type": "command_injection",  "severity": "HIGH",   "fix": "Avoid system(); use execvp() with validated args."},
     "popen":    {"type": "command_injection",  "severity": "HIGH",   "fix": "Avoid popen(); use pipe()+fork()+exec()."},
     "exec":     {"type": "command_injection",  "severity": "HIGH",   "fix": "Sanitise all arguments."},
@@ -60,59 +47,57 @@ UNSAFE_FUNCTIONS: dict[str, dict] = {
     "execlp":   {"type": "command_injection",  "severity": "HIGH",   "fix": "Avoid user-controlled args."},
     "execv":    {"type": "command_injection",  "severity": "HIGH",   "fix": "Validate all arguments."},
     "execvp":   {"type": "command_injection",  "severity": "HIGH",   "fix": "Avoid user input in exec."},
-    # ── Input Validation ──────────────────────────────────────────────
+
     "atoi":     {"type": "input_validation",   "severity": "MEDIUM", "fix": "Use strtol() with error checking."},
     "atof":     {"type": "input_validation",   "severity": "MEDIUM", "fix": "Use strtod() with error checking."},
     "atol":     {"type": "input_validation",   "severity": "MEDIUM", "fix": "Use strtol() with error checking."},
-    # ── Unsafe Temp Files ─────────────────────────────────────────────
+
     "tmpnam":   {"type": "unsafe_tmp_file",    "severity": "HIGH",   "fix": "Use mkstemp() instead."},
     "mktemp":   {"type": "unsafe_tmp_file",    "severity": "HIGH",   "fix": "Use mkstemp() instead."},
     "tempnam":  {"type": "unsafe_tmp_file",    "severity": "HIGH",   "fix": "Use mkstemp() instead."},
-    # ── Weak Randomness ───────────────────────────────────────────────
+
     "rand":     {"type": "weak_random",        "severity": "MEDIUM", "fix": "Use a cryptographic RNG for security-sensitive code."},
     "srand":    {"type": "weak_random",        "severity": "LOW",    "fix": "srand()+rand() is not cryptographically secure."},
-    # ── Insecure Crypto ───────────────────────────────────────────────
+
     "md5":      {"type": "insecure_hash",      "severity": "HIGH",   "fix": "Use SHA-256 or stronger."},
     "sha1":     {"type": "insecure_hash",      "severity": "HIGH",   "fix": "SHA-1 is broken; use SHA-256."},
     "MD5_Init": {"type": "insecure_hash",      "severity": "HIGH",   "fix": "Use SHA-256 or bcrypt."},
     "SHA1_Init":{"type": "insecure_hash",      "severity": "HIGH",   "fix": "SHA-1 is broken; use SHA-256."},
-    # ── Race Conditions ───────────────────────────────────────────────
+
     "access":   {"type": "race_condition",     "severity": "MEDIUM", "fix": "TOCTOU risk — open file directly and check error."},
-    # ── Privilege ─────────────────────────────────────────────────────
+
     "setuid":   {"type": "privilege_escalation","severity": "HIGH",   "fix": "Avoid privilege escalation; drop privileges early."},
     "seteuid":  {"type": "privilege_escalation","severity": "HIGH",   "fix": "Drop privileges as soon as possible."},
     "setgid":   {"type": "privilege_escalation","severity": "HIGH",   "fix": "Check return value."},
-    # ── Deprecated ────────────────────────────────────────────────────
+
     "cuserid":  {"type": "deprecated_function","severity": "MEDIUM", "fix": "Removed in POSIX.1-2001; use getlogin_r()."},
     "rindex":   {"type": "deprecated_function","severity": "LOW",    "fix": "Use strrchr()."},
     "bcopy":    {"type": "deprecated_function","severity": "LOW",    "fix": "Use memmove()."},
     "bzero":    {"type": "deprecated_function","severity": "LOW",    "fix": "Use memset()."},
 }
 
-# printf-family functions that take a format string
+
 _PRINTF_FAMILY = {"printf", "fprintf", "sprintf", "snprintf", "syslog", "wprintf", "dprintf"}
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  Public entry point
-# ═══════════════════════════════════════════════════════════════════════
+
 
 def analyze(code: str) -> list[dict]:
     """
     Run the full three-phase compiler pipeline and return a vulnerability
     report as a list of finding dicts.
     """
-    # ── Phase 1: Lexical Analysis ─────────────────────────────────────
+
     tokens = tokenize(code)
 
-    # ── Phase 2: Syntax Analysis ──────────────────────────────────────
+
     ast = parse(tokens)
 
-    # ── Phase 3: Semantic Analysis ────────────────────────────────────
+
     report: list[dict] = []
     seen: set[tuple] = set()
 
-    # 3-a  AST-based checks (context-aware)
+
     _check_unsafe_calls(ast, report, seen)
     _check_format_strings(ast, report, seen)
     _check_use_after_free(ast, report, seen)
@@ -121,22 +106,20 @@ def analyze(code: str) -> list[dict]:
     _check_large_stack_arrays(ast, report, seen)
     _check_uninitialized_vars(ast, report, seen)
 
-    # 3-b  Regex-based sweep (supplementary patterns)
+
     _regex_sweep(code, report, seen)
 
     return report
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  AST Walker Utility
-# ═══════════════════════════════════════════════════════════════════════
+
 
 def _walk(node: ASTNode):
-    """Depth-first yield of every node in the AST by dynamically checking fields."""
+
     if not isinstance(node, ASTNode):
         return
     yield node
-    # Dynamically visit all potential child attributes
+
     for attr in ["children", "body", "then_body", "else_body", "arguments", "initializer", "value"]:
         val = getattr(node, attr, None)
         if isinstance(val, list):
@@ -154,12 +137,10 @@ def _add(report, seen, **finding):
         report.append(finding)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  3-a  AST-Based Semantic Checks
-# ═══════════════════════════════════════════════════════════════════════
+
 
 def _check_unsafe_calls(ast: ASTNode, report, seen):
-    """Detect calls to known unsafe C functions by walking the AST."""
+
     for node in _walk(ast):
         if isinstance(node, FunctionCallNode) and node.name in UNSAFE_FUNCTIONS:
             info = UNSAFE_FUNCTIONS[node.name]
@@ -181,7 +162,7 @@ def _check_format_strings(ast: ASTNode, report, seen):
         if node.name not in _PRINTF_FAMILY:
             continue
 
-        # Determine which argument is the format string
+
         fmt_idx = 1 if node.name in ("fprintf", "snprintf", "dprintf") else 0
         if node.name == "snprintf":
             fmt_idx = 2  # snprintf(buf, size, fmt, ...)
@@ -214,10 +195,10 @@ def _check_use_after_free(ast: ASTNode, report, seen):
 
 
 def _uaf_in_stmts(stmts: list[ASTNode], report, seen):
-    freed: dict[str, int] = {}  # var_name → line of free()
+
 
     for stmt in stmts:
-        # Detect free(x)
+
         if isinstance(stmt, FunctionCallNode) and stmt.name == "free":
             if stmt.arguments:
                 arg = stmt.arguments[0]
@@ -225,13 +206,13 @@ def _uaf_in_stmts(stmts: list[ASTNode], report, seen):
                     freed[arg.tokens[0].value] = stmt.line
             continue
 
-        # Detect reassignment (clears freed status)
+
         # ONLY if the target is exactly the name (ptr = ...), NOT a dereference (*ptr = ...)
         if isinstance(stmt, AssignmentNode) and stmt.target in freed:
             del freed[stmt.target]
             continue
 
-        # Check usage of freed pointer
+
         if freed:
             for tok in _all_tokens(stmt):
                 if tok.type == TokenType.IDENTIFIER and tok.value in freed:
@@ -244,7 +225,7 @@ def _uaf_in_stmts(stmts: list[ASTNode], report, seen):
 
 
 def _check_double_free(ast: ASTNode, report, seen):
-    """Detect multiple free() calls on the same pointer."""
+
     for node in _walk(ast):
         if not isinstance(node, FunctionDeclNode):
             continue
@@ -271,7 +252,7 @@ def _double_free_in_stmts(stmts: list[ASTNode], report, seen):
                         freed[var] = stmt.line
             continue
 
-        # Reassignment clears freed status
+
         if isinstance(stmt, AssignmentNode) and stmt.target in freed:
             del freed[stmt.target]
 
@@ -289,14 +270,14 @@ def _check_unchecked_return(ast: ASTNode, report, seen, code: str):
             continue
 
         for stmt in node.body:
-            # Pattern: ptr = malloc(...)
+
             if isinstance(stmt, AssignmentNode) and stmt.value:
                 vtoks = _expr_tokens(stmt.value)
                 call_names = [t.value for t in vtoks if t.type == TokenType.IDENTIFIER]
                 for fn in call_names:
                     if fn in alloc_fns:
                         var = stmt.target
-                        # Look ahead for NULL check
+
                         if not _has_null_check(lines, stmt.line, var):
                             _add(report, seen,
                                  type="unchecked_return",
@@ -308,7 +289,7 @@ def _check_unchecked_return(ast: ASTNode, report, seen, code: str):
 
 
 def _has_null_check(lines: list[str], start_line: int, var: str) -> bool:
-    """Look a few lines after allocation for a NULL guard."""
+
     end = min(start_line + 6, len(lines))
     for i in range(start_line, end):
         line = lines[i]
@@ -322,7 +303,7 @@ def _has_null_check(lines: list[str], start_line: int, var: str) -> bool:
 
 
 def _check_large_stack_arrays(ast: ASTNode, report, seen):
-    """Flag stack-allocated arrays larger than a threshold."""
+
     THRESHOLD = 10_000
 
     for node in _walk(ast):
@@ -341,7 +322,7 @@ def _check_large_stack_arrays(ast: ASTNode, report, seen):
 
 
 def _check_uninitialized_vars(ast: ASTNode, report, seen):
-    """Flag pointer variables declared without initialisation."""
+
     for node in _walk(ast):
         if isinstance(node, VarDeclNode):
             if node.is_pointer and node.initializer is None and not node.is_array:
@@ -353,9 +334,7 @@ def _check_uninitialized_vars(ast: ASTNode, report, seen):
                      line=node.line, phase="semantic")
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  3-b  Regex-Based Supplementary Sweep
-# ═══════════════════════════════════════════════════════════════════════
+
 
 def _regex_sweep(code: str, report, seen):
     """
@@ -367,7 +346,7 @@ def _regex_sweep(code: str, report, seen):
     def strip_comments(line: str) -> str:
         return re.sub(r"//.*", "", line)
 
-    # Only run categories that are *supplementary* (not already covered by AST)
+
     supplementary = {
         "hardcoded_secret", "insecure_permissions", "env_exposure",
         "unsafe_file_handling", "infinite_loop", "integer_overflow",
@@ -399,7 +378,7 @@ def _regex_sweep(code: str, report, seen):
             for idx, line in enumerate(lines, start=1):
                 clean = strip_comments(line)
                 if regex.search(clean):
-                    # Context-aware override for integer overflow
+
                     issue_severity = severity
                     issue_fix = fix
                     if vuln_type == "integer_overflow":
@@ -432,12 +411,10 @@ def _has_overflow_guard(lines: list[str], line_idx: int, var_name: str) -> bool:
     return False
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  Token extraction helpers
-# ═══════════════════════════════════════════════════════════════════════
+
 
 def _all_tokens(node: ASTNode) -> list[Token]:
-    """Collect all tokens reachable from an AST node, including inside labels like *ptr."""
+
     result: list[Token] = []
     for child in _walk(node):
         if isinstance(child, ExpressionNode):
@@ -445,16 +422,16 @@ def _all_tokens(node: ASTNode) -> list[Token]:
         if isinstance(child, FunctionCallNode):
             result.append(Token(TokenType.IDENTIFIER, child.name, child.line))
         if isinstance(child, AssignmentNode):
-            # Extract identifiers from targets like "ptr" or "*ptr"
+
             target = child.target
-            # Find all words in the target string
+
             for match in re.finditer(r'\b[A-Za-z_]\w*\b', target):
                 result.append(Token(TokenType.IDENTIFIER, match.group(), child.line))
     return result
 
 
 def _expr_tokens(node: ASTNode) -> list[Token]:
-    """Get tokens from an expression node."""
+
     if isinstance(node, ExpressionNode):
         return node.tokens
     return []

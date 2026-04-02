@@ -1,16 +1,4 @@
-"""
-SecureCC — Phase 2: Syntax Analysis (Parser)
 
-Builds a simplified Abstract Syntax Tree (AST) from a token stream.
-The parser handles common C constructs relevant to security analysis:
-  - Preprocessor directives
-  - Function declarations / definitions
-  - Variable declarations (scalars, pointers, arrays)
-  - Function calls
-  - Assignments
-  - Control structures (if, while, for)
-  - Return statements
-"""
 
 from __future__ import annotations
 
@@ -20,13 +8,11 @@ from typing import List, Optional
 from .lexer import Token, TokenType
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  AST Node Definitions
-# ═══════════════════════════════════════════════════════════════════════
+
 
 @dataclass
 class ASTNode:
-    """Base class for all AST nodes."""
+
     kind: str
     line: int = 0
     children: List["ASTNode"] = field(default_factory=list)
@@ -114,9 +100,7 @@ class ExpressionNode(ASTNode):
     tokens: List[Token] = field(default_factory=list)
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  Parser
-# ═══════════════════════════════════════════════════════════════════════
+
 
 _TYPE_KEYWORDS = {
     "void", "int", "char", "float", "double", "short", "long",
@@ -126,19 +110,15 @@ _TYPE_KEYWORDS = {
 
 
 class Parser:
-    """
-    Simplified recursive-descent parser for C code.
-    Builds an AST suitable for security-focused semantic analysis.
-    """
+
 
     def __init__(self, tokens: List[Token]):
         self.all_tokens = tokens
-        # Filter out comments for parsing
         self.tokens = [t for t in tokens if t.type != TokenType.COMMENT]
         self.pos = 0
         self.errors: List[str] = []
 
-    # ── helpers ───────────────────────────────────────────────────────
+
 
     def _cur(self) -> Token:
         if self.pos < len(self.tokens):
@@ -176,7 +156,7 @@ class Parser:
     def _is_type(token: Token) -> bool:
         return token.type == TokenType.KEYWORD and token.value in _TYPE_KEYWORDS
 
-    # ── top-level ─────────────────────────────────────────────────────
+
 
     def parse(self) -> ProgramNode:
         root = ProgramNode(line=1)
@@ -186,7 +166,7 @@ class Parser:
                 if node:
                     root.children.append(node)
             except Exception:
-                self._advance()  # skip on error to avoid infinite loop
+                self._advance()
         return root
 
     def _top_level(self) -> Optional[ASTNode]:
@@ -198,13 +178,13 @@ class Parser:
         self._advance()
         return None
 
-    # ── declarations ──────────────────────────────────────────────────
+
 
     def _declaration(self) -> Optional[ASTNode]:
         save = self.pos
         line = self._cur().line
 
-        # Collect type specifiers
+
         type_parts: list[str] = []
         while self._is_type(self._cur()) or (
             self._cur().type == TokenType.IDENTIFIER and not type_parts
@@ -213,7 +193,7 @@ class Parser:
             if self._at_end():
                 break
 
-        # Pointer stars
+
         is_ptr = False
         while self._cur().value == "*":
             is_ptr = True
@@ -283,7 +263,7 @@ class Parser:
             self._advance()
         return node
 
-    # ── statements ────────────────────────────────────────────────────
+
 
     def _block(self) -> List[ASTNode]:
         stmts: list[ASTNode] = []
@@ -392,23 +372,23 @@ class Parser:
             self._advance()
         return node
 
-    # ── expression statements ─────────────────────────────────────────
+
 
     def _expr_stmt(self) -> Optional[ASTNode]:
         tok = self._cur()
         line = tok.line
 
-        # function call: ident(...)
+
         if tok.type == TokenType.IDENTIFIER and self._peek().value == "(":
             return self._func_call_stmt()
 
-        # assignment: ident = ...
+
         if tok.type == TokenType.IDENTIFIER and self._peek().value in (
             "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=",
         ):
             return self._assignment()
 
-        # pointer deref assignment: *ptr = ...
+
         if tok.value == "*" and self._peek().type == TokenType.IDENTIFIER:
             self._advance()
             name = self._advance().value
@@ -424,7 +404,7 @@ class Parser:
             return ExpressionNode(line=line, tokens=[Token(TokenType.OPERATOR, "*", line),
                                                       Token(TokenType.IDENTIFIER, name, line)])
 
-        # generic expression
+
         toks = self._collect_until(";", "}")
         if self._cur().value == ";":
             self._advance()
@@ -479,7 +459,7 @@ class Parser:
             value=ExpressionNode(line=line, tokens=vtoks),
         )
 
-    # ── token utilities ───────────────────────────────────────────────
+
 
     def _paren_tokens(self) -> List[Token]:
         toks: list[Token] = []
@@ -518,11 +498,8 @@ class Parser:
             self._advance()
 
 
-# ═══════════════════════════════════════════════════════════════════════
-#  Public API
-# ═══════════════════════════════════════════════════════════════════════
+
 
 def parse(tokens: List[Token]) -> ProgramNode:
-    """Parse a list of tokens into an AST."""
     p = Parser(tokens)
     return p.parse()
