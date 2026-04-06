@@ -1,33 +1,22 @@
-
-
 from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import List, Optional
-
 from .lexer import Token, TokenType
-
-
-
 
 @dataclass
 class ASTNode:
-
     kind: str
     line: int = 0
     children: List["ASTNode"] = field(default_factory=list)
-
 
 @dataclass
 class ProgramNode(ASTNode):
     kind: str = "Program"
 
-
 @dataclass
 class PreprocessorNode(ASTNode):
     kind: str = "Preprocessor"
     directive: str = ""
-
 
 @dataclass
 class FunctionDeclNode(ASTNode):
@@ -36,7 +25,6 @@ class FunctionDeclNode(ASTNode):
     name: str = ""
     params: List[str] = field(default_factory=list)
     body: List[ASTNode] = field(default_factory=list)
-
 
 @dataclass
 class VarDeclNode(ASTNode):
@@ -48,13 +36,11 @@ class VarDeclNode(ASTNode):
     array_size: str = ""
     initializer: Optional[ASTNode] = None
 
-
 @dataclass
 class FunctionCallNode(ASTNode):
     kind: str = "FunctionCall"
     name: str = ""
     arguments: List[ASTNode] = field(default_factory=list)
-
 
 @dataclass
 class AssignmentNode(ASTNode):
@@ -63,7 +49,6 @@ class AssignmentNode(ASTNode):
     operator: str = "="
     value: Optional[ASTNode] = None
 
-
 @dataclass
 class IfNode(ASTNode):
     kind: str = "If"
@@ -71,13 +56,11 @@ class IfNode(ASTNode):
     then_body: List[ASTNode] = field(default_factory=list)
     else_body: List[ASTNode] = field(default_factory=list)
 
-
 @dataclass
 class WhileNode(ASTNode):
     kind: str = "While"
     condition: List[Token] = field(default_factory=list)
     body: List[ASTNode] = field(default_factory=list)
-
 
 @dataclass
 class ForNode(ASTNode):
@@ -87,20 +70,15 @@ class ForNode(ASTNode):
     update_tokens: List[Token] = field(default_factory=list)
     body: List[ASTNode] = field(default_factory=list)
 
-
 @dataclass
 class ReturnNode(ASTNode):
     kind: str = "Return"
     value_tokens: List[Token] = field(default_factory=list)
 
-
 @dataclass
 class ExpressionNode(ASTNode):
     kind: str = "Expression"
     tokens: List[Token] = field(default_factory=list)
-
-
-
 
 _TYPE_KEYWORDS = {
     "void", "int", "char", "float", "double", "short", "long",
@@ -108,17 +86,12 @@ _TYPE_KEYWORDS = {
     "static", "extern", "volatile", "register", "typedef", "auto",
 }
 
-
 class Parser:
-
-
     def __init__(self, tokens: List[Token]):
         self.all_tokens = tokens
         self.tokens = [t for t in tokens if t.type != TokenType.COMMENT]
         self.pos = 0
         self.errors: List[str] = []
-
-
 
     def _cur(self) -> Token:
         if self.pos < len(self.tokens):
@@ -156,8 +129,6 @@ class Parser:
     def _is_type(token: Token) -> bool:
         return token.type == TokenType.KEYWORD and token.value in _TYPE_KEYWORDS
 
-
-
     def parse(self) -> ProgramNode:
         root = ProgramNode(line=1)
         while not self._at_end():
@@ -178,13 +149,9 @@ class Parser:
         self._advance()
         return None
 
-
-
     def _declaration(self) -> Optional[ASTNode]:
         save = self.pos
         line = self._cur().line
-
-
         type_parts: list[str] = []
         while self._is_type(self._cur()) or (
             self._cur().type == TokenType.IDENTIFIER and not type_parts
@@ -192,24 +159,18 @@ class Parser:
             type_parts.append(self._advance().value)
             if self._at_end():
                 break
-
-
         is_ptr = False
         while self._cur().value == "*":
             is_ptr = True
             type_parts.append("*")
             self._advance()
-
         if self._at_end() or not type_parts:
             return None
-
         if self._cur().type != TokenType.IDENTIFIER:
             self.pos = save
             return self._statement()
-
         name = self._advance().value
         vtype = " ".join(type_parts)
-
         if self._cur().value == "(":
             return self._func_decl(vtype, name, line)
         if self._cur().value == "[":
@@ -231,7 +192,6 @@ class Parser:
             params.append(self._advance().value)
         self._expect(")")
         node.params = params
-
         if self._cur().value == "{":
             node.body = self._block()
         elif self._cur().value == ";":
@@ -262,8 +222,6 @@ class Parser:
         if self._cur().value == ";":
             self._advance()
         return node
-
-
 
     def _block(self) -> List[ASTNode]:
         stmts: list[ASTNode] = []
@@ -372,23 +330,15 @@ class Parser:
             self._advance()
         return node
 
-
-
     def _expr_stmt(self) -> Optional[ASTNode]:
         tok = self._cur()
         line = tok.line
-
-
         if tok.type == TokenType.IDENTIFIER and self._peek().value == "(":
             return self._func_call_stmt()
-
-
         if tok.type == TokenType.IDENTIFIER and self._peek().value in (
             "=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=",
         ):
             return self._assignment()
-
-
         if tok.value == "*" and self._peek().type == TokenType.IDENTIFIER:
             self._advance()
             name = self._advance().value
@@ -403,8 +353,6 @@ class Parser:
                 )
             return ExpressionNode(line=line, tokens=[Token(TokenType.OPERATOR, "*", line),
                                                       Token(TokenType.IDENTIFIER, name, line)])
-
-
         toks = self._collect_until(";", "}")
         if self._cur().value == ";":
             self._advance()
@@ -459,8 +407,6 @@ class Parser:
             value=ExpressionNode(line=line, tokens=vtoks),
         )
 
-
-
     def _paren_tokens(self) -> List[Token]:
         toks: list[Token] = []
         self._expect("(")
@@ -496,9 +442,6 @@ class Parser:
             self._advance()
         if self._cur().value == stop:
             self._advance()
-
-
-
 
 def parse(tokens: List[Token]) -> ProgramNode:
     p = Parser(tokens)

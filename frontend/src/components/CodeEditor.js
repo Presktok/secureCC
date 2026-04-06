@@ -9,7 +9,6 @@ int main() {
 }
 `;
 
-
 function apiBaseUrl() {
   const fromEnv = process.env.REACT_APP_API_URL;
   if (fromEnv) return fromEnv.replace(/\/$/, "");
@@ -83,7 +82,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
   const newFile = () => {
     const name = window.prompt("Enter file name (e.g. newfile.c):");
     if (!name) return;
-
     setFiles((prev) => {
       if (prev[name]) {
         return prev;
@@ -103,7 +101,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
       }
       return updated;
     });
-
     setCompileOutput("File saved locally.");
     setActiveTab("output");
   };
@@ -120,14 +117,11 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       });
-
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`API error ${res.status}: ${text}`);
       }
-
       const data = await res.json();
-
       if (data.status === "blocked") {
         setResult(Array.isArray(data.findings) ? data.findings : []);
         setCompileOutput("Compilation blocked due to security findings.");
@@ -148,7 +142,7 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
       const raw = e?.message || "Request failed";
       const hint =
         raw === "Failed to fetch"
-          ? " Start FastAPI: run the .\\run_backend.bat script in your project root (needs GCC on PATH)."
+          ? " Start FastAPI backend solver."
           : "";
       setError(`${raw}.${hint}`);
       setActiveTab("output");
@@ -174,7 +168,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
           },
         };
       });
-
     decorationRef.current = editorRef.current.deltaDecorations(decorationRef.current, next);
   }, [pretty, editorReady]);
 
@@ -183,7 +176,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
     document.addEventListener("fullscreenchange", onFsChange);
-
     const onMove = (e) => {
       if (!dragRef.current.dragging) return;
       const dy = dragRef.current.startY - e.clientY;
@@ -191,11 +183,9 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
       const next = Math.max(120, Math.min(max, dragRef.current.startHeight + dy));
       setOutputHeight(next);
     };
-
     const onUp = () => {
       dragRef.current.dragging = false;
     };
-
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
     return () => {
@@ -254,7 +244,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
                   await document.exitFullscreen();
                 }
               } catch {
-
               }
             }}
             title={isFullscreen ? "Exit fullscreen (Esc)" : "Enter fullscreen"}
@@ -263,7 +252,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
           </button>
         </div>
       </div>
-
       <div className="ide-main">
         <div className="sidebar neon-panel">
           <h3>Files</h3>
@@ -281,12 +269,10 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
               {file}
             </div>
           ))}
-
           <button onClick={newFile} className="sidebar-button">
             + New File
           </button>
         </div>
-
         <div className="editor-area">
           <div className="editor-section neon-panel">
             <Editor
@@ -307,7 +293,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
               }}
             />
           </div>
-
           <div className="controls neon-panel">
             <button onClick={saveFile} disabled={loading} className="btn-save">
               💾 Save Code
@@ -330,7 +315,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
           </div>
         </div>
       </div>
-
       <div
         className="output-section neon-panel"
         style={{ height: outputHeight }}
@@ -361,11 +345,9 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
             Security Report
           </button>
         </div>
-
         {error ? (
           <div className="error-box">{error}</div>
         ) : null}
-
         {activeTab === "output" ? (
           <div>
             <h2>Compiler Output</h2>
@@ -379,7 +361,6 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
             )}
           </div>
         ) : null}
-
         {activeTab === "security" ? (
           <div>
             <h2>Security Report</h2>
@@ -417,4 +398,3 @@ export default function CodeEditor({ user, onLogout, currentTheme, onThemeChange
     </div>
   );
 }
-

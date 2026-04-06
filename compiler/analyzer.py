@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 import re
@@ -83,10 +81,7 @@ _PRINTF_FAMILY = {"printf", "fprintf", "sprintf", "snprintf", "syslog", "wprintf
 
 
 def analyze(code: str) -> list[dict]:
-    """
-    Run the full three-phase compiler pipeline and return a vulnerability
-    report as a list of finding dicts.
-    """
+    
 
     tokens = tokenize(code)
 
@@ -151,11 +146,6 @@ def _check_unsafe_calls(ast: ASTNode, report, seen):
 
 
 def _check_format_strings(ast: ASTNode, report, seen):
-    """
-    Detect format-string vulnerabilities:
-      printf(variable)           → HIGH  (user-controlled format)
-      printf("%s", variable)     → safe
-    """
     for node in _walk(ast):
         if not isinstance(node, FunctionCallNode):
             continue
@@ -165,7 +155,7 @@ def _check_format_strings(ast: ASTNode, report, seen):
 
         fmt_idx = 1 if node.name in ("fprintf", "snprintf", "dprintf") else 0
         if node.name == "snprintf":
-            fmt_idx = 2  # snprintf(buf, size, fmt, ...)
+            fmt_idx = 2  
 
         args = node.arguments
         if len(args) <= fmt_idx:
@@ -184,10 +174,7 @@ def _check_format_strings(ast: ASTNode, report, seen):
 
 
 def _check_use_after_free(ast: ASTNode, report, seen):
-    """
-    Track free(ptr) calls inside function bodies; flag if ptr is used
-    again later without being reassigned.
-    """
+    
     for node in _walk(ast):
         if not isinstance(node, FunctionDeclNode):
             continue
@@ -207,7 +194,7 @@ def _uaf_in_stmts(stmts: list[ASTNode], report, seen):
             continue
 
 
-        # ONLY if the target is exactly the name (ptr = ...), NOT a dereference (*ptr = ...)
+        
         if isinstance(stmt, AssignmentNode) and stmt.target in freed:
             del freed[stmt.target]
             continue
@@ -258,10 +245,7 @@ def _double_free_in_stmts(stmts: list[ASTNode], report, seen):
 
 
 def _check_unchecked_return(ast: ASTNode, report, seen, code: str):
-    """
-    Flag malloc/calloc/fopen calls whose return value is used
-    without a NULL check nearby.
-    """
+    
     alloc_fns = {"malloc", "calloc", "realloc", "fopen", "fopen64"}
     lines = code.splitlines()
 
@@ -337,10 +321,7 @@ def _check_uninitialized_vars(ast: ASTNode, report, seen):
 
 
 def _regex_sweep(code: str, report, seen):
-    """
-    Run regex-based rules from rules.py for patterns that benefit from
-    raw text scanning (hardcoded secrets, magic permissions, etc.).
-    """
+    
     lines = code.splitlines()
 
     def strip_comments(line: str) -> str:
