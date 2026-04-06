@@ -195,7 +195,7 @@ def _check_use_after_free(ast: ASTNode, report, seen):
 
 
 def _uaf_in_stmts(stmts: list[ASTNode], report, seen):
-
+    freed: dict[str, int] = {}
 
     for stmt in stmts:
 

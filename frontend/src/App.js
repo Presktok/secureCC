@@ -42,9 +42,9 @@ function App() {
           onThemeChange={handleThemeChange}
         />
       ) : showAuth ? (
-        <AuthPage onAuthSuccess={setUser} theme={theme} onThemeChange={handleThemeChange} />
+        <AuthPage onAuthSuccess={setUser} />
       ) : (
-        <GetStartedPage onContinue={() => setShowAuth(true)} theme={theme} onThemeChange={handleThemeChange} />
+        <GetStartedPage onContinue={() => setShowAuth(true)} />
       )}
     </div>
   );

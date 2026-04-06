@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ThemeSwitcher from "./ThemeSwitcher";
+
 
 const USERS_KEY = "securecc_users";
 const SESSION_KEY = "securecc_session";
@@ -18,7 +18,7 @@ function saveUsers(users) {
   window.localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }
 
-export default function AuthPage({ onAuthSuccess, theme, onThemeChange }) {
+export default function AuthPage({ onAuthSuccess }) {
   const [mode, setMode] = useState("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -75,9 +75,7 @@ export default function AuthPage({ onAuthSuccess, theme, onThemeChange }) {
   return (
     <div className="auth-screen">
       <div className="auth-card neon-panel">
-        <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-          <ThemeSwitcher currentTheme={theme} onThemeChange={onThemeChange} />
-        </div>
+
         <h1>SecureCC</h1>
         <p className="auth-subtitle">Login or create an account to continue</p>
 

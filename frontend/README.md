@@ -1,70 +1,76 @@
-# Getting Started with Create React App
+# SecureCC - Security-Aware Compiler Dashboard (Frontend)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+SecureCC is a professional-grade security-aware compiler framework with a modern terminal-inspired dashboard. It provides real-time C code analysis for common vulnerabilities like buffer overflows and risky function calls.
 
-## Available Scripts
+## Key Features
 
-In the project directory, you can run:
+- **Real-time Code Analysis**: Instant feedback on security risks within the Monaco Editor.
+- **Multi-Theme Support**: Choice of "Midnight", "Slate", and "Snow" themes for developer comfort.
+- **Interactive UI**: High-end glassmorphic design with smooth transitions and particle animations.
+- **Secure Onboarding**: Dedicated "Get Started" and "Authentication" workflows.
 
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js (v18+)
+- npm
 
-### `npm test`
+### Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1.  Navigate to the `frontend` directory:
+    ```bash
+    cd frontend
+    ```
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
 
-### `npm run build`
+### Running the App
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Run the development server:
+```bash
+npm start
+```
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+---
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Technical Division of Labor (Viva Overview)
 
-### `npm run eject`
+For the purpose of development and presentation, the frontend work was divided between two core roles:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### 1. Core System Architect & Logic (Person 1)
+- **Infrastructure**: App routing, state management, and component architecture (`App.js`, `index.js`).
+- **Core Engine**: Monaco Editor integration and backend security API communication (`CodeEditor.js`).
+- **Analysis Visualization**: Real-time line-marker mapping and vulnerability result displays.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 2. UI/UX Designer & Feature Specialist (Person 2)
+- **Design System**: Global CSS theme tokens, glassmorphic effects, and responsive layout (`App.css`, `index.css`).
+- **Onboarding Interface**: Landing page design with particles and scroll animations (`GetStartedPage.js`).
+- **User Authentication**: Secure Login/Signup interfaces and form logic (`AuthPage.js`).
+- **Personalization**: Theme switcher implementation and integration (`ThemeSwitcher.js`).
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Project Structure
 
-## Learn More
+```text
+src/
+├── components/
+│   ├── AuthPage.js        <- Authentication (Login/Signup)
+│   ├── CodeEditor.js      <- Main Dashboard & Analysis
+│   ├── GetStartedPage.js  <- Landing Page
+│   └── ThemeSwitcher.js   <- Theme Selection UI
+├── App.js                 <- Root Component & Routing
+├── App.css                <- Main Styling
+└── index.js               <- Entry Point
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Built With
 
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **React.js**: Modern component-based architecture.
+- **Monaco Editor**: High-performance code editor for the web.
+- **FastAPI**: Communication with the Python-based security engine.
+- **Vanilla CSS**: Custom-tuned aesthetics without bloated frameworks.
